@@ -1,14 +1,19 @@
 import React, { Component } from 'react';
-import each from 'lodash/each'
-import head from 'lodash/head'
-import tail from 'lodash/tail'
-import isEmpty from 'lodash/isEmpty'
-import size from 'lodash/size'
-import filter from 'lodash/filter'
-import { Grid, Row, Col } from 'react-bootstrap';
-import DiceFilter from './DiceFilter'
-import { FormGroup, ControlLabel, FormControl } from 'react-bootstrap'
-import ProbabilityPercent from './ProbabilityPercent'
+import { Grid, Row, Col, FormGroup, ControlLabel, FormControl } from 'react-bootstrap';
+import each from 'lodash/each';
+import head from 'lodash/head';
+import tail from 'lodash/tail';
+import isEmpty from 'lodash/isEmpty';
+import size from 'lodash/size';
+import filter from 'lodash/filter';
+import map from 'lodash/map';
+import groupBy from 'lodash/groupBy';
+import max from 'lodash/max';
+import range from 'lodash/range';
+import keys from 'lodash/keys';
+import DiceFilter from './DiceFilter';
+import ProbabilityPercent from './ProbabilityPercent';
+import ProbabilityGraph from './ProbabilityGraph';
 
 class RollStats extends Component {
 
@@ -22,6 +27,7 @@ class RollStats extends Component {
 		this.generateOutcomes = this.generateOutcomes.bind(this);
 		this.combineOutcomes = this.combineOutcomes.bind(this);
 		this.generateStats = this.generateStats.bind(this);
+		this.formatData = this.formatData.bind(this);
 		this.changeMinRange = this.changeMinRange.bind(this);
 		this.changeMinDamage = this.changeMinDamage.bind(this);
 		this.changeMinSurge = this.changeMinSurge.bind(this);
@@ -45,6 +51,11 @@ class RollStats extends Component {
 			return null;
 		}
 
+		let rangeData = this.formatData('range', outcomes);
+		let damageData = this.formatData('damage', outcomes);
+		let surgeData = this.formatData('surge', outcomes);
+
+
 		let filteredOutcomes = filter(outcomes, (outcome) => 
 			outcome.range >= this.state.minRange && outcome.damage >= this.state.minDamage && outcome.surge >= this.state.minSurge
 		)
@@ -63,6 +74,7 @@ class RollStats extends Component {
 							<li>Max: {stats.range.max}</li>
 							<li>Avg: {stats.range.avg}</li>
 						</ul>
+						<ProbabilityGraph data={rangeData} title="Range"/>
 					</Col>
 					<Col xs={3}>
 						<DiceFilter label="Target Damage" id="minDamage" value={this.state.minDamage} onChange={this.changeMinDamage} />
@@ -72,6 +84,7 @@ class RollStats extends Component {
 							<li>Max: {stats.damage.max}</li>
 							<li>Avg: {stats.damage.avg}</li>
 						</ul>
+						<ProbabilityGraph data={damageData} title="Damage"/>
 					</Col>
 					<Col xs={3}>
 						<DiceFilter label="Target Surges" id="minSurge" value={this.state.minSurge} onChange={this.changeMinSurge} />
@@ -81,6 +94,7 @@ class RollStats extends Component {
 							<li>Max: {stats.surge.max}</li>
 							<li>Avg: {stats.surge.avg}</li>
 						</ul>
+						<ProbabilityGraph data={surgeData} title="Surge"/>
 					</Col>
 					<Col xs={3}>
 					    <FormGroup>
@@ -159,6 +173,18 @@ class RollStats extends Component {
 			}
 		});
 		return result;
+	}
+
+	formatData(prop, outcomes) {
+		let byProp = groupBy(outcomes, prop);
+		let values = keys(byProp);
+		let maxValue = max(values, parseInt);
+		let valueRange = range(parseInt(maxValue) + 2);
+		let data = map(valueRange, function(value) {
+			let probability = Math.round((size(byProp[value]) / size(outcomes)) * 10000) / 100;
+			return {x: value, y: probability};
+		});
+		return data;
 	}
 
 }
