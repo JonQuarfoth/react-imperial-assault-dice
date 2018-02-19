@@ -1,5 +1,5 @@
-import React, { Component } from 'react';
-import { Navbar, Grid, Row, Col } from 'react-bootstrap';
+import React, {Component} from 'react';
+import {Navbar, Grid, Row, Col} from 'react-bootstrap';
 import './App.css';
 import DiePool from './components/dice/DiePool'
 
