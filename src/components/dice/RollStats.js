@@ -14,6 +14,7 @@ import keys from 'lodash/keys';
 import DiceFilter from './DiceFilter';
 import ProbabilityPercent from './ProbabilityPercent';
 import ProbabilityGraph from './ProbabilityGraph';
+import ProbabilityBars from './ProbabilityBars';
 
 class RollStats extends Component {
 
@@ -23,7 +24,7 @@ class RollStats extends Component {
       minRange: 0,
       minDamage: 0,
       minSurge: 0
-    }
+    };
     this.generateOutcomes = this.generateOutcomes.bind(this);
     this.combineOutcomes = this.combineOutcomes.bind(this);
     this.generateStats = this.generateStats.bind(this);
@@ -54,48 +55,35 @@ class RollStats extends Component {
     let rangeData = this.formatData('range', outcomes);
     let damageData = this.formatData('damage', outcomes);
     let surgeData = this.formatData('surge', outcomes);
+    let stats = this.generateStats(outcomes);
 
 
     let filteredOutcomes = filter(outcomes, (outcome) =>
       outcome.range >= this.state.minRange && outcome.damage >= this.state.minDamage && outcome.surge >= this.state.minSurge
-    )
-    const probability = size(filteredOutcomes) / size(outcomes)
+    );
 
-    let stats = this.generateStats(filteredOutcomes);
+    const probability = size(filteredOutcomes) / size(outcomes);
 
     return (
       <Grid>
         <Row>
           <Col xs={3}>
-            <DiceFilter label="Target Range" id="minRange" value={this.state.minRange} onChange={this.changeMinRange}/>
-            <h3>Range</h3>
-            <ul>
-              <li>Min: {stats.range.min}</li>
-              <li>Max: {stats.range.max}</li>
-              <li>Avg: {stats.range.avg}</li>
-            </ul>
-            <ProbabilityGraph data={rangeData} title="Range"/>
+            <DiceFilter label="Target Range"
+                        id="minRange"
+                        value={this.state.minRange}
+                        onChange={this.changeMinRange}/>
           </Col>
           <Col xs={3}>
-            <DiceFilter label="Target Damage" id="minDamage" value={this.state.minDamage}
+            <DiceFilter label="Target Damage"
+                        id="minDamage"
+                        value={this.state.minDamage}
                         onChange={this.changeMinDamage}/>
-            <h3>Damage</h3>
-            <ul>
-              <li>Min: {stats.damage.min}</li>
-              <li>Max: {stats.damage.max}</li>
-              <li>Avg: {stats.damage.avg}</li>
-            </ul>
-            <ProbabilityGraph data={damageData} title="Damage"/>
           </Col>
           <Col xs={3}>
-            <DiceFilter label="Target Surges" id="minSurge" value={this.state.minSurge} onChange={this.changeMinSurge}/>
-            <h3>Surge</h3>
-            <ul>
-              <li>Min: {stats.surge.min}</li>
-              <li>Max: {stats.surge.max}</li>
-              <li>Avg: {stats.surge.avg}</li>
-            </ul>
-            <ProbabilityGraph data={surgeData} title="Surge"/>
+            <DiceFilter label="Target Surges"
+                        id="minSurge"
+                        value={this.state.minSurge}
+                        onChange={this.changeMinSurge}/>
           </Col>
           <Col xs={3}>
             <FormGroup>
@@ -104,6 +92,38 @@ class RollStats extends Component {
                 <ProbabilityPercent value={probability}/>
               </FormControl.Static>
             </FormGroup>
+          </Col>
+        </Row>
+        <Row>
+          <Col xs={4}>
+            <h3>Range</h3>
+            <ul>
+              <li>Min: {stats.range.min}</li>
+              <li>Max: {stats.range.max}</li>
+              <li>Avg: {stats.range.avg}</li>
+            </ul>
+            <ProbabilityGraph data={rangeData.atLeast} title="Range" color="blue"/>
+            <ProbabilityBars data={rangeData.exact} title="Range" color="blue"/>
+          </Col>
+          <Col xs={4}>
+            <h3>Damage</h3>
+            <ul>
+              <li>Min: {stats.damage.min}</li>
+              <li>Max: {stats.damage.max}</li>
+              <li>Avg: {stats.damage.avg}</li>
+            </ul>
+            <ProbabilityGraph data={damageData.atLeast} title="Damage" color="red"/>
+            <ProbabilityBars data={damageData.exact} title="Damage" color="red"/>
+          </Col>
+          <Col xs={4}>
+            <h3>Surge</h3>
+            <ul>
+              <li>Min: {stats.surge.min}</li>
+              <li>Max: {stats.surge.max}</li>
+              <li>Avg: {stats.surge.avg}</li>
+            </ul>
+            <ProbabilityGraph data={surgeData.atLeast} title="Surge" color="gold"/>
+            <ProbabilityBars data={surgeData.exact} title="Surge" color="gold"/>
           </Col>
         </Row>
       </Grid>
@@ -122,7 +142,7 @@ class RollStats extends Component {
   }
 
   combineOutcomes(outcome1, outcome2) {
-    let combinedOutcomes = []
+    let combinedOutcomes = [];
     each(outcome1, (o1) => {
       each(outcome2, (o2) => {
         combinedOutcomes.push({
@@ -178,14 +198,23 @@ class RollStats extends Component {
 
   formatData(prop, outcomes) {
     let byProp = groupBy(outcomes, prop);
-    let values = keys(byProp);
-    let maxValue = max(values, parseInt);
-    let valueRange = range(parseInt(maxValue) + 2);
-    let data = map(valueRange, function (value) {
+    let values = map(keys(byProp), (val) => parseInt(val, 10));
+    let maxValue = max(values);
+    let valueRange = range(maxValue + 2);
+
+    let exact = map(valueRange, function (value) {
       let probability = Math.round((size(byProp[value]) / size(outcomes)) * 10000) / 100;
-      return {x: value, y: probability};
+      return {x: value, y: probability}
     });
-    return data;
+
+    let totalProbability = 100.00;
+    let atLeast = map(exact, function (value) {
+      let result = {x: value.x, y: totalProbability};
+      totalProbability = Math.round((totalProbability - value.y) * 100) / 100;
+      return result;
+    });
+
+    return {exact: exact, atLeast: atLeast};
   }
 
 }

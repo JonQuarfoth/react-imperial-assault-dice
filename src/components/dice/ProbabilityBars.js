@@ -1,15 +1,16 @@
 import React, {Component} from 'react';
 import {FlexibleWidthXYPlot, XAxis, YAxis, HorizontalGridLines, VerticalBarSeries, Crosshair} from 'react-vis';
 import 'react-vis/dist/style.css';
-import find from 'lodash/find';
+import find from "lodash/find";
 
-class ProbabilityGraph extends Component {
+class ProbabilityBars extends Component {
   constructor(props) {
     super(props);
     this.state = {
       nearestX: []
-    };
+    }
   }
+
 
   render() {
     const {data, title, color} = this.props;
@@ -17,7 +18,7 @@ class ProbabilityGraph extends Component {
 
     const findDatapointByX = (series, x) => find(series, (point) => point.x === x);
     const titleFormat = (points) => ({title: title, value: points ? points[0].x : 0});
-    const itemsFormat = (points) => points.map((point) => ({title: 'Odds of rolling at least ' + point.x, value: point.y + '%'}));
+    const itemsFormat = (points) => points.map((point) => ({title: 'Odds of rolling ' + point.x, value: point.y + '%'}));
 
     return (
       <FlexibleWidthXYPlot
@@ -28,7 +29,8 @@ class ProbabilityGraph extends Component {
           color={color}
           data={data}
           onNearestX={(point) => this.setState({nearestX: [findDatapointByX(data, point.x)]})}/>
-        <Crosshair values={nearestX}
+        <Crosshair
+          values={nearestX}
           titleFormat={titleFormat}
           itemsFormat={itemsFormat}/>
         <XAxis title={title} tickValues={data.map(p => p.x)}/>
@@ -38,4 +40,4 @@ class ProbabilityGraph extends Component {
   }
 }
 
-export default ProbabilityGraph
+export default ProbabilityBars
